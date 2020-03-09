@@ -1,0 +1,9 @@
+#background {
+	position: absolute;
+	width: 600px;
+	height: 600px;
+	background-color: black;
+}
+div {
+	font-size: 100px;
+}

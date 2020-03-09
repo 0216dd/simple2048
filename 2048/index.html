@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>2048</title>
+	<link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <div id="background">
+    </div>
+</body>
+<script>
+	var backgroundWidth = 600;
+	//每两个小块之间的距离
+	var spaceBetweenTiles = 8;
+	var tileWidth = (backgroundWidth - spaceBetweenTiles * 5) / 4;
+
+	document.onkeydown = keyDown;
+	function keyDown(e) {
+    	switch (e.keyCode) {
+    		case 37:
+    			moveFourRows('left');
+    			break;
+    		case 38: 
+    		    moveFourRows('up');
+    		    break;
+    		case 39:
+    			moveFourRows('right');
+    	        break;
+    	    case 40:
+    	        moveFourRows('down');
+    	        break;
+    	}
+	}
+    function moveFourRows(direction) {
+    	var tilesToRemove = [];
+    	var tilesToDouble = [];
+        var fourRows = rows(direction);
+        var stepsForEachTile = [[1,1,1,1],
+                                [1,1,1,1],
+                                [1,1,1,1],
+                                [1,1,1,1]];
+        for (var i = 0; i < 4; i++) {
+        	var row = fourRows[i];
+        	var pairFound = false;
+        	for (var u = 0; u < 3; u++) {
+        		if (row[u] == 'none') {
+        			for (var p = u+1; p < 4; p++) {
+        				stepsForEachTile[i][p]++;
+        			}
+        		} else if (pairFound) {
+        			continue;
+        		} else if (row[u+1].firstElementChild) {
+        			if (row[u+1].firstElementChild.innerHTML == row[u].firstElementChild.innerHTML) {
+        				tilesToRemove.push(row[u+1]);
+        				tilesToDouble.push(row[u]);
+        				for (var y = u+1; y < 4; y++) {
+        					stepsForEachTile[i][y]++;
+        				}
+        				pairFound = true;
+        			}
+        		}
+        	}
+        }
+        for (var u = 0; u < 4; u++) {
+        	for (var i = 0; i < 4; i++) {
+        		if (fourRows[u][i] !== 'none') {
+        			myMove(fourRows[u][i],direction,stepsForEachTile[u][i]-1);
+        		}
+        	}
+        }
+
+        for (var i = tilesToRemove.length - 1; i >= 0; i--) {
+        	tilesToRemove[i].parentNode.removeChild(tilesToRemove[i]);
+        }
+
+        for (i = 0; i < 16; i++) {
+        	if (!document.getElementById(`${i}`)) {
+        		continue;
+        	}
+        	var tile = document.getElementById(`${i}`);
+        	tile.id = mapPositionNumber([tile.style.left, tile.style.top]).toString();
+        }
+
+        for (var i = tilesToDouble.length - 1; i >= 0; i--) {
+        	tilesToDouble[i].firstElementChild.innerHTML = (parseInt(tilesToDouble[i].firstElementChild.innerHTML) * 2).toString();
+        }
+        addTile();
+    }
+	function myMove(elem, direction,times) { 
+			var distance = (tileWidth + spaceBetweenTiles) * times;
+            switch (direction) {
+				 		case 'up':
+				 		    elem.style.top = addPx(parseInt(elem.style.top) - distance);
+				 			break;
+				 		case 'down':
+				 		    elem.style.top = addPx(parseInt(elem.style.top) + distance);
+				 			break;
+				 		case 'left':
+				 		    elem.style.left = addPx(parseInt(elem.style.left) - distance);
+				 		    break;
+				 		case 'right':
+				 		    elem.style.left = addPx(parseInt(elem.style.left) + distance);
+				 			break;
+		   	} 
+		   	elem.id = mapPositionNumber([elem.style.left, elem.style.top]).toString();
+	}
+	function rows(direction) {
+		var fourRows = [];
+		function process(n) {
+			if (document.getElementById(n.toString())) {
+              	oneRow.push(document.getElementById(n.toString()));
+			} else {
+				oneRow.push('none');
+			}
+		}
+		switch (direction) {
+				 		case 'up':
+				 			for (var x = 0; x < 4; x++) {
+								var oneRow = [];
+								for (var y =0; y < 4; y++) {
+									var n = x * 4 + y;
+									process(n);
+								}
+								fourRows.push(oneRow);
+							}
+				 			break;
+				 		case 'down':
+				 			for (var x = 0; x < 4; x++) {
+								var oneRow = [];
+								for (var y = 3; y > -1; y--) {
+									var n = x * 4 + y;
+									process(n);
+								}
+								fourRows.push(oneRow);
+							}
+				 			break;
+				 		case 'left':
+				 		    for (var x = 0; x < 4; x++) {
+								var oneRow = [];
+								for (var y =0; y < 4; y++) {
+									var n = y * 4 + x;
+									process(n);
+								}
+								fourRows.push(oneRow);
+							}
+				 			break;
+				 		case 'right': 
+   				        	for (var x = 0; x < 4; x++) {
+								var oneRow = [];
+								for (var y =3; y > -1; y--) {
+									var n = y * 4 + x;
+									process(n);
+								}
+								fourRows.push(oneRow);
+							}
+				 			break;
+		}
+		return fourRows;
+	}
+	function availableSpace() {
+        var space = createMap();
+        for (var i = 0; i < 16; i++) {
+        	if (document.getElementById(i.toString())) {
+                  space[i] = 'none';
+        	}
+        }
+        return space.filter(
+        	function(ele) {
+        		return ele !== 'none';
+        	});
+	};
+    
+    function addTile() {
+    	var space = availableSpace();
+    	if (space.length == 0) {
+    		return;
+    	}
+    	var number = Math.floor(Math.random() * 2);
+    	if (number) {
+    		number = 2;
+    	} else {
+    		number = 4;
+    	}
+    	var tileToAdd = tile(false).cloneNode(true);
+    	var label = document.createElement('DIV');
+    	label.innerHTML = number.toString();
+    	tileToAdd.appendChild(label);
+    	var tilePosition = Math.floor((Math.random() * space.length));
+    	tilePosition = space[tilePosition];
+    	tileToAdd.style.left = tilePosition[0];
+    	tileToAdd.style.top = tilePosition[1];
+    	tileToAdd.id = mapPositionNumber(tilePosition).toString();
+    	document.getElementById('background').appendChild(tileToAdd);
+    }
+    function createMap() {
+    	var map = [];
+    	for (var x = 0; x < 4; x++) {
+			for (var y = 0; y < 4; y++) {
+    			var position = [];
+				var positionX = addPx(spaceBetweenTiles + (tileWidth + spaceBetweenTiles) * x);
+				var positionY = addPx(spaceBetweenTiles + (tileWidth + spaceBetweenTiles) * y);
+				position.push(positionX);
+				position.push(positionY);
+				map.push(position);
+			}
+		}
+		return map;
+    }
+    function mapPositionNumber(position) {
+    	var x = (parseInt(position[0]) - spaceBetweenTiles) / (tileWidth + spaceBetweenTiles);
+    	var y = (parseInt(position[1]) - spaceBetweenTiles) / (tileWidth + spaceBetweenTiles);
+
+    	return (x * 4 + y);
+    }
+    function tile(isGrey) {
+    	var tile = document.createElement('DIV');
+		tile.style.width = addPx(tileWidth);
+		tile.style.height = addPx(tileWidth);
+		tile.style.position = 'absolute';
+		if (isGrey) {
+			tile.style.background = 'grey';
+		} else {
+			tile.style['animation-fill-mode'] = 'forwards';
+			tile.style.background = 'lightblue';
+		}
+		return tile;
+    }
+	function createTileBackground() {
+		var GreyTile = tile(true);
+		for (var i = createMap().length - 1; i >= 0; i--) {
+			GreyTile.style.top = createMap()[i][1];
+			GreyTile.style.left = createMap()[i][0];
+			document.getElementById('background').appendChild(GreyTile.cloneNode(false));
+		}
+		addTile();
+	}
+	function addPx(n) {
+		return n+'px';
+	}
+	createTileBackground();
+</script>
+</html>
